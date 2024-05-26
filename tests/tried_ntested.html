@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Circuit Editor</title>
+    <style>
+        /* Style for quantum gate buttons */
+        .gate {
+            display: inline-block;
+            width: 80px;
+            height: 40px;
+            border: 1px solid #000;
+            background-color: #f0f0f0;
+            text-align: center;
+            line-height: 40px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        /* Style for canvas */
+        #canvas {
+            width: 600px;
+            height: 400px;
+            border: 1px solid #000;
+            margin-top: 20px;
+            position: relative;
+        }
+
+        /* Style for quantum gate images */
+        .gate img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Quantum Circuit Editor</h1>
+    <div id="toolbox">
+        <div class="gate" id="h_gate" draggable="true"><img
+                src="https://upload.wikimedia.org/wikipedia/commons/2/24/Quantum_Hadamard_Gate.svg" alt="Hadamard Gate">
+        </div>
+        <div class="gate" id="x_gate" draggable="true"><img
+                src="https://upload.wikimedia.org/wikipedia/commons/8/8f/Quantum_XOR.svg" alt="Pauli-X Gate"></div>
+        <!-- Add more gate buttons here -->
+    </div>
+    <div id="canvas"></div>
+
+    <script>
+        // Define quantum gate objects
+        const gates = {
+            "h_gate": "H",
+            "x_gate": "X"
+            // Add more gate mappings here
+        };
+
+        // Define quantum circuit
+        let circuit = [];
+
+        // Define quantum circuit connections
+        let connections = [];
+
+        // Variable to track the starting gate for connection
+        let startGate = null;
+
+        // Function to handle drag start event
+        function dragStart(event) {
+            event.dataTransfer.setData("text/plain", event.target.id);
+        }
+
+        // Function to handle drag over event
+        function allowDrop(event) {
+            event.preventDefault();
+        }
+
+        // Function to handle drop event
+        function drop(event) {
+            event.preventDefault();
+            var gateId = event.dataTransfer.getData("text/plain");
+            var gate = gates[gateId];
+            var gateElement = document.createElement("div");
+            gateElement.textContent = gate;
+            gateElement.className = "gate";
+            gateElement.style.position = "absolute";
+            gateElement.style.left = (event.clientX - event.target.offsetLeft) + "px";
+            gateElement.style.top = (event.clientY - event.target.offsetTop) + "px";
+            gateElement.addEventListener("click", gateClick); // Add click event listener
+
+            var gateObj = {
+                gate: gate,
+                x: event.clientX - event.target.offsetLeft,
+                y: event.clientY - event.target.offsetTop,
+                element: gateElement
+            };
+
+            // Add the gate to the circuit
+            circuit.push(gateObj);
+            event.target.appendChild(gateElement);
+
+            renderConnections();
+        }
+
+        // Function to handle connection creation
+        function createConnection(startGate, endGate) {
+            // Check if the connection already exists
+            if (!connections.some(conn => conn.start === startGate && conn.end === endGate)) {
+                // Add the connection to the list
+                connections.push({
+                    start: startGate,
+                    end: endGate
+                });
+            }
+        }
+
+        // Function to render connections
+        function renderConnections() {
+            var canvas = document.getElementById("canvas");
+            var ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            connections.forEach(function (conn) {
+                var startRect = conn.start.element.getBoundingClientRect();
+                var endRect = conn.end.element.getBoundingClientRect();
+                var canvasRect = canvas.getBoundingClientRect();
+
+                var startX = startRect.left + startRect.width / 2 - canvasRect.left;
+                var startY = startRect.top + startRect.height / 2 - canvasRect.top;
+                var endX = endRect.left + endRect.width / 2 - canvasRect.left;
+                var endY = endRect.top + endRect.height / 2 - canvasRect.top;
+
+                // Draw a line between the gates
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+            });
+        }
+
+        // Function to handle gate click event
+        function gateClick(event) {
+            var clickedGateElement = event.currentTarget;
+            var clickedGate = circuit.find(gate => gate.element === clickedGateElement);
+
+            if (!startGate) {
+                // First gate clicked
+                startGate = clickedGate;
+                startGate.element.style.border = "2px solid red"; // Highlight the selected gate
+            } else {
+                // Second gate clicked
+                if (startGate !== clickedGate) {
+                    createConnection(startGate, clickedGate);
+                    renderConnections();
+                }
+                startGate.element.style.border = "1px solid #000"; // Remove highlight from the first gate
+                startGate = null;
+            }
+        }
+
+        // Add event listeners to gate buttons
+        var gateButtons = document.querySelectorAll(".gate");
+        gateButtons.forEach(function (button) {
+            button.addEventListener("dragstart", dragStart);
+        });
+
+        // Add event listeners to canvas
+        var canvas = document.getElementById("canvas");
+        canvas.addEventListener("dragover", allowDrop);
+        canvas.addEventListener("drop", drop);
+    </script>
+</body>
+
+</html>

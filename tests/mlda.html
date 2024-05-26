@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Quantum Circuit Simulator</title>
+   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+   <style>
+       body {
+           background-color: #f8f9fa;
+           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+       }
+
+       .container {
+           max-width: 800px;
+           margin: 0 auto;
+           padding: 20px;
+       }
+
+       .item {
+           display: inline-block;
+           width: 80px;
+           height: 40px;
+           border: 1px solid #6c757d;
+           background-color: #e9ecef;
+           text-align: center;
+           line-height: 40px;
+           margin-right: 10px;
+           cursor: pointer;
+           border-radius: 5px;
+           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+       }
+
+       #canvas {
+           width: 100%;
+           height: 400px;
+           border: 1px solid #6c757d;
+           margin-top: 20px;
+           position: relative;
+           background-color: #fff;
+           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+           border-radius: 5px;
+       }
+
+       .item img {
+           max-width: 100%;
+           max-height: 100%;
+       }
+
+       #connections {
+           position: absolute;
+           top: 0;
+           left: 0;
+           width: 100%;
+           height: 100%;
+           pointer-events: none;
+       }
+
+       .qubit {
+           background-color: #e9ecef;
+           color: #343a40;
+       }
+
+       .gate {
+           background-color: #ced4da;
+           color: #343a40;
+       }
+
+       .output {
+           background-color: #adb5bd;
+           color: #343a40;
+       }
+
+       #simulate {
+           margin-top: 20px;
+           padding: 10px 20px;
+           font-size: 16px;
+           background-color: #007bff;
+           color: #fff;
+           border: none;
+           border-radius: 5px;
+           cursor: pointer;
+           transition: background-color 0.3s ease;
+       }
+
+       #simulate:hover {
+           background-color: #0056b3;
+       }
+   </style>
+</head>
+<body>
+   <div class="container">
+       <h1 class="text-center mb-4">Quantum Circuit Simulator</h1>
+       <div class="d-flex justify-content-center mb-4">
+           <div class="item qubit" id="qubit0" draggable="true">Q0</div>
+           <div class="item qubit" id="qubit1" draggable="true">Q1</div>
+           <div class="item gate" id="y_gate" draggable="true"><img src="https://upload.wikimedia.org/wikipedia/commons/7/79/Qcircuit_Y.svg" alt="Y Gate"></div>
+           <div class="item gate" id="s_gate" draggable="true"><img src="image.png" alt="S Gate"></div>
+           <div class="item gate" id="z_gate" draggable="true"><img src="https://images.squarespace-cdn.com/content/v1/5d52f7bd9d7b3e0001819015/1586780524250-EINIFXTHIJTRHPND1FVU/Qcircuit_CZ.svg.png?format=1500w" alt="Z Gate"></div>
+           <div class ="item gate" id="x_gate" draggable="true"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQCg_Ch5aInMP6YC8QV2H3tzOl9TMqTXxcZ18rA4XP7&s" alt="X Gate"></div>
+           <div class="item gate" id="cnot_gate" draggable="true"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQCBbCNx3lbLKjdGivnbphma4gXD9PCdCzX0TPoYMDA4g&s" alt="CNOT Gate"></div>
+           <div class="item gate" id="h_gate" draggable="true"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Hadamard_gate.svg/1200px-Hadamard_gate.svg.png" alt="H Gate"></div>
+           <div class="item output" id="output_terminal" draggable="true">Output</div>
+       </div>
+       <div id="canvas">
+           <svg id="connections"></svg>
+       </div>
+       <div class="text-center">
+           <button id="simulate">Simulate</button>
+       </div>
+   </div>
+
+   <script>
+       const gates = {
+           "gate1": "Gate 1",
+           "gate2": "Gate 2",
+           "gate3": "Gate 3"
+       };
+       let circuit = [];
+       let connections = [];
+       let startElement = null;
+
+       function dragStart(event) {
+           event.dataTransfer.setData("text/plain", event.target.id);
+       }
+
+       function allowDrop(event) {
+           event.preventDefault();
+       }
+
+       function drop(event) {
+           event.preventDefault();
+           const itemId = event.dataTransfer.getData("text/plain");
+           const itemType = itemId.startsWith("qubit") ? "qubit" : itemId === "output_terminal" ? "output" : "gate";
+           const itemContent = itemType === "qubit" ? itemId.toUpperCase() : itemType === "output" ? "Output" : gates[itemId];
+           const itemElement = document.createElement("div");
+           itemElement.textContent = itemContent;
+           itemElement.className = `item ${itemType}`;
+           itemElement.style.position = "absolute";
+           itemElement.style.left = (event.clientX - event.target.offsetLeft) + "px";
+           itemElement.style.top = (event.clientY - event.target.offsetTop) + "px";
+           itemElement.addEventListener("click", itemClick);
+
+           const itemObj = {
+               type: itemType,
+               id: itemId,
+               content: itemContent,
+               x: event.clientX - event.target.offsetLeft,
+               y: event.clientY - event.target.offsetTop,
+               element: itemElement
+           };
+
+           circuit.push(itemObj);
+           event.target.appendChild(itemElement);
+       }
+
+       function createConnection(startElement, endElement) {
+           if (!connections.some(conn => conn.start === startElement && conn.end === endElement)) {
+               connections.push({ start: startElement, end: endElement });
+           }
+       }
+
+       function renderConnections() {
+           const svg = document.getElementById("connections");
+           svg.innerHTML = '';
+
+           connections.forEach(conn => {
+               const startRect = conn.start.element.getBoundingClientRect();
+               const endRect = conn.end.element.getBoundingClientRect();
+               const canvasRect = svg.getBoundingClientRect();
+
+               const startX = startRect.left + startRect.width / 2 - canvasRect.left;
+               const startY = startRect.top + startRect.height / 2 - canvasRect.top;
+               const endX = endRect.left + endRect.width / 2 - canvasRect.left;
+               const endY = endRect.top + endRect.height / 2 - canvasRect.top;
+
+               const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', startX);
+            line.setAttribute('y1', startY);
+            line.setAttribute('x2', endX);
+            line.setAttribute('y2', endY);
+            line.setAttribute('stroke', '#007bff');
+            line.setAttribute('stroke-width', '2');
+            svg.appendChild(line);
+        });
+    }
+
+    function itemClick(event) {
+        const clickedElement = event.currentTarget;
+        const clickedItem = circuit.find(item => item.element === clickedElement);
+
+        if (!startElement) {
+            startElement = clickedItem;
+            startElement.element.style.border = "2px solid #007bff";
+        } else {
+            if (startElement !== clickedItem) {
+                createConnection(startElement, clickedItem);
+                renderConnections();
+            }
+            startElement.element.style.border = "1px solid #6c757d";
+            startElement = null;
+        }
+    }
+
+    function simulateCircuit() {
+        const qubits = circuit.filter(item => item.type === "qubit").map(qubit => ({
+            id: qubit.id,
+            content: qubit.content
+        }));
+
+        const gates = circuit.filter(item => item.type === "gate").map(gate => ({
+            id: gate.id,
+            content: gate.content
+        }));
+
+        const output = circuit.find(item => item.type === "output");
+
+        // Perform simulation logic here
+        console.log("Simulating circuit...");
+        console.log("Qubits:", qubits);
+        console.log("Gates:", gates);
+        console.log("Connections:", connections);
+        console.log("Output:", output ? output.id : "No output");
+    }
+
+    const items = document.querySelectorAll(".item");
+    items.forEach(item => {
+        item.addEventListener("dragstart", dragStart);
+    });
+
+    const canvas = document.getElementById("canvas");
+    canvas.addEventListener("dragover", allowDrop);
+    canvas.addEventListener("drop", drop);
+
+    document.getElementById("simulate").addEventListener("click", simulateCircuit);
+</script> 

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Circuit Simulator</title>
+    <style>
+        .item {
+            display: inline-block;
+            width: 80px;
+            height: 40px;
+            border: 1px solid #000;
+            background-color: #f0f0f0;
+            text-align: center;
+            line-height: 40px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        #canvas {
+            width: 600px;
+            height: 400px;
+            border: 1px solid #000;
+            margin-top: 20px;
+            position: relative;
+        }
+
+        .item img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        #connections {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .qubit {
+            background-color: #e0e0e0;
+        }
+
+        .gate {
+            background-color: #d0d0d0;
+        }
+
+        .output {
+            background-color: #c0c0c0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Quantum Circuit Simulator</h1>
+    <div id="toolbox">
+        <div class="item qubit" id="qubit0" draggable="true">Q0</div>
+        <div class="item qubit" id="qubit1" draggable="true">Q1</div>
+        <div class="item gate" id="y_gate" draggable="true"><img src="https://example.com/y_gate.svg" alt="Y Gate">
+        </div>
+        <div class="item gate" id="s_gate" draggable="true"><img src="https://example.com/s_gate.svg" alt="S Gate">
+        </div>
+        <div class="item gate" id="z_gate" draggable="true"><img src="https://example.com/z_gate.svg" alt="Z Gate">
+        </div>
+        <div class="item gate" id="x_gate" draggable="true"><img src="https://example.com/x_gate.svg" alt="X Gate">
+        </div>
+        <div class="item gate" id="cnot_gate" draggable="true"><img src="https://example.com/cnot_gate.svg"
+                alt="CNOT Gate"></div>
+        <div class="item gate" id="h_gate" draggable="true"><img src="https://example.com/h_gate.svg" alt="H Gate">
+        </div>
+        <div class="item output" id="output_terminal" draggable="true">Output</div>
+    </div>
+    <div id="canvas">
+        <svg id="connections"></svg>
+    </div>
+    <button id="simulate">Simulate</button>
+
+    <script>
+        const gates = {
+            "gate1": "Gate 1",
+            "gate2": "Gate 2",
+            "gate3": "Gate 3"
+        };
+        let circuit = [];
+        let connections = [];
+        let startElement = null;
+
+        function dragStart(event) {
+            event.dataTransfer.setData("text/plain", event.target.id);
+        }
+
+        function allowDrop(event) {
+            event.preventDefault();
+        }
+
+        function drop(event) {
+            event.preventDefault();
+            const itemId = event.dataTransfer.getData("text/plain");
+            const itemType = itemId.startsWith("qubit") ? "qubit" : itemId === "output_terminal" ? "output" : "gate";
+            const itemContent = itemType === "qubit" ? itemId.toUpperCase() : itemType === "output" ? "Output" : gates[itemId];
+            const itemElement = document.createElement("div");
+            itemElement.textContent = itemContent;
+            itemElement.className = `item ${itemType}`;
+            itemElement.style.position = "absolute";
+            itemElement.style.left = (event.clientX - event.target.offsetLeft) + "px";
+            itemElement.style.top = (event.clientY - event.target.offsetTop) + "px";
+            itemElement.addEventListener("click", itemClick);
+
+            const itemObj = {
+                type: itemType,
+                id: itemId,
+                content: itemContent,
+                x: event.clientX - event.target.offsetLeft,
+                y: event.clientY - event.target.offsetTop,
+                element: itemElement
+            };
+
+            circuit.push(itemObj);
+            event.target.appendChild(itemElement);
+        }
+
+        function createConnection(startElement, endElement) {
+            if (!connections.some(conn => conn.start === startElement && conn.end === endElement)) {
+                connections.push({ start: startElement, end: endElement });
+            }
+        }
+
+        function renderConnections() {
+            const svg = document.getElementById("connections");
+            svg.innerHTML = '';
+
+            connections.forEach(conn => {
+                const startRect = conn.start.element.getBoundingClientRect();
+                const endRect = conn.end.element.getBoundingClientRect();
+                const canvasRect = svg.getBoundingClientRect();
+
+                const startX = startRect.left + startRect.width / 2 - canvasRect.left;
+                const startY = startRect.top + startRect.height / 2 - canvasRect.top;
+                const endX = endRect.left + endRect.width / 2 - canvasRect.left;
+                const endY = endRect.top + endRect.height / 2 - canvasRect.top;
+
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', startX);
+                line.setAttribute('y1', startY);
+                line.setAttribute('x2', endX);
+                line.setAttribute('y2', endY);
+                line.setAttribute('stroke', 'black');
+                svg.appendChild(line);
+            });
+        }
+
+        function itemClick(event) {
+            const clickedElement = event.currentTarget;
+            const clickedItem = circuit.find(item => item.element === clickedElement);
+
+            if (!startElement) {
+                startElement = clickedItem;
+                startElement.element.style.border = "2px solid red";
+            } else {
+                if (startElement !== clickedItem) {
+                    createConnection(startElement, clickedItem);
+                    renderConnections();
+                }
+                startElement.element.style.border = "1px solid #000";
+                startElement = null;
+            }
+        }
+
+        function simulateCircuit() {
+            const qubits = circuit.filter(item => item.type === "qubit").map(qubit => ({
+                id: qubit.id,
+                content: qubit.content
+            }));
+
+            const gates = circuit.filter(item => item.type === "gate").map(gate => ({
+                id: gate.id,
+                content: gate.content
+            }));
+
+            const output = circuit.find(item => item.type === "output");
+
+            // Simulate the circuit and get the result
+            const simulationResult = {
+                // Replace with your actual simulation logic
+                qubits: qubits.map(qubit => `${qubit.content}: 0`),
+                gates: gates.map(gate => `${gate.content}: Applied`),
+                output: output ? `Output: 0` : "No output"
+            };
+
+            // Show the simulation result as a pop-up
+            alert(`Simulation Result:\n\n${Object.values(simulationResult).join('\n')}`);
+        }
+
+        const items = document.querySelectorAll(".item");
+        items.forEach(item => {
+            item.addEventListener("dragstart", dragStart);
+        });
+
+        const canvas = document.getElementById("canvas");
+        canvas.addEventListener("dragover", allowDrop);
+        canvas.addEventListener("drop", drop);
+
+        document.getElementById("simulate").addEventListener("click", simulateCircuit);
+    </script>
+</body>
+</html>

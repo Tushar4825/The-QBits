@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Website</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:wght@400&display=swap" rel="stylesheet">
+    <style>
+        /* Ensure the video covers the background */
+        .background-video-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .background-video {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            z-index: -1;
+        }
+
+        .text-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+        }
+
+        .purple-header {
+            background-color: #f0e6ff;
+            /* Light shade of purple */
+            padding: 10px 0;
+            /* Thin header */
+            z-index: 2;
+            /* Higher z-index than content overlay */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            /* Make the text smaller */
+            font-weight: 400;
+            font-family: 'Bodoni Moda', serif;
+            /* Update the font family */
+            margin: 0;
+            line-height: 1.2;
+            text-align: center;
+            padding: 20px;
+            color: rgba(0, 0, 0, 0.8);
+            /* Adjust the text color and opacity */
+        }
+
+        .black-text {
+            color: black;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="purple-header">
+        <nav class="navbar navbar-expand-lg navbar-light bg-transparent">
+            <div class="container">
+                <a class="navbar-brand" href="{{ url_for('index') }}">
+                    <img src="images/QBits.pngg" alt="Logo" height="30">
+                    <!-- Replace 'your-logo-url.jpg' with your actual logo URL -->
+                    <i><b>TheQuantum Website</b></i>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('visualize_algorithms') }}">Visualize Algorithms</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('build_circuit') }}">Build Circuit</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('simulate') }}">Simulate</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="http://localhost:8501/">Quantum Games</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <div class="background-video-container">
+        <video autoplay muted loop class="background-video">
+            <source src="https://www.ibm.com/quantum/videos/q-safe/leadspace.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    </div>
+
+    <div class="text-container" id="text-container">
+        <h1><span class="black-text">Bringing the </span><span class="multi-color-text">Quant-essential</span> <span
+                class="black-text">Simulator</span></h1>
+    </div>
+
+    <script>
+        // Delay the appearance of the text container after 1 second
+        setTimeout(function () {
+            document.getElementById('text-container').style.opacity = '1';
+        }, 1000);
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
