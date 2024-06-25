@@ -1,0 +1,1 @@
+Qbits, an intuitive and interactive Quantum Computing Simulator, enables users to construct quantum circuits visually, input quantum algorithms, simulate their execution, and visualize the results. Key features include a visual circuit builder, integration of popular quantum algorithms like Shor's and Grover's, and simulation and visualization capabilities.
